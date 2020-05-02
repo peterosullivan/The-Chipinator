@@ -62,7 +62,8 @@ void loop() {
     //Serial.print("Count Value: ");
     //Serial.println(count);
     count++;
-
+    
+    /*
     //mario_sound
     tone(tonePin, NOTE_E6,125);
     delay(130);
@@ -76,6 +77,12 @@ void loop() {
     delay(130);
     tone(tonePin, NOTE_G7,125);
     delay(125);
+    noTone(tonePin);
+    */
+     
+    //simple beep tone
+    tone(tonePin, 170);
+    delay(50);
     noTone(tonePin);
 
     lazer_previous_state = LOW;
