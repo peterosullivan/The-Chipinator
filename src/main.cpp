@@ -50,7 +50,7 @@ void setup() {
 }
 
 void playSound(){
-  if (count == 100){
+  if (count == 50){
     //mario_sound
     tone(tonePin, NOTE_E6, 125);
     delay(130);
