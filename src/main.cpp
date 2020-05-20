@@ -4,18 +4,36 @@
 #include <LiquidCrystal_I2C.h>
 #include "pitches.h"
 #include "secret.h"
+#include <math.h>
 
 const byte interruptPin = D4; // pin 2 =  D4 for  sensor
 const byte tonePin = D6;      //pin 12;
 volatile boolean interrupt_occurred = false;
-volatile int count = 0;
+volatile int score = 0;
+int target_score = 10;
+float percent_score = 0;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 //LiquidCrystal_I2C lcd(0x27,20,4);
 
 void ICACHE_RAM_ATTR ISR(){
-  count++;
+  score++;
   interrupt_occurred = true;   // Record that an interrupt occurred
+}
+
+void updateDisplay(){
+  if(score > target_score){
+    score = 1;
+  }
+  percent_score = ((float)score / (float)target_score) * 100.0;
+  lcd.clear();
+  lcd.print("Score: ");
+  lcd.print(percent_score, 0);
+  lcd.print("%");
+  lcd.setCursor(0, 1);
+  lcd.print(score);
+  lcd.print("/");
+  lcd.print(target_score);
 }
 
 void setup() {
@@ -44,13 +62,11 @@ void setup() {
   delay(2000);
   lcd.clear();
 
-  lcd.print("Counter: ");
-  lcd.setCursor(0, 1);
-  lcd.print(count);
+  updateDisplay();
 }
 
 void playSound(){
-  if (count == 50){
+  if (score == 50){
     //mario_sound
     tone(tonePin, NOTE_E6, 125);
     delay(130);
@@ -77,17 +93,18 @@ void playSound(){
 void loop() {
   
   if (interrupt_occurred){
-    playSound();
     interrupt_occurred = false;
+    playSound();
+    updateDisplay();
   }
  
-  Serial.print("Current: ");
-  Serial.print(" Pre: ");
-  Serial.print(" Counter: ");
-  Serial.println(count);
+  /*
+  Serial.print(" score: ");
+  Serial.print(score);
+  Serial.print(" target: ");
+  Serial.println(target_score);
+  */
+
   
-  //delay(200);
-  lcd.setCursor(0, 1);
-  lcd.print(count);
 }
  
