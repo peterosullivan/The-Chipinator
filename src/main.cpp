@@ -5,13 +5,18 @@
 #include "pitches.h"
 #include "secret.h"
 #include <math.h>
+#include <vector>
 
 const byte interruptPin = D4; // pin 2 =  D4 for  sensor
 const byte tonePin = D6;      //pin 12;
 volatile boolean interrupt_occurred = false;
 volatile int score = 0;
 int target_score = 10;
-float percent_score = 0;
+int percent_score = 0;
+float average_score = 0.0;
+
+int past_scores [3];
+std::vector<int> ps;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 //LiquidCrystal_I2C lcd(0x27,20,4);
@@ -21,19 +26,45 @@ void ICACHE_RAM_ATTR ISR(){
   interrupt_occurred = true;   // Record that an interrupt occurred
 }
 
-void updateDisplay(){
-  if(score > target_score){
-    score = 1;
+float calculateAverage(){
+  float total = 0.0;
+  for(int i = 0; i < ps.size(); i++){
+    total += ps[i];
   }
-  percent_score = ((float)score / (float)target_score) * 100.0;
+  return total / ps.size();
+}
+
+void newGame(){
+  score = 0;
+  average_score = calculateAverage();
+}
+
+void updateDisplay(){
+  percent_score = (score * 100) / 10;
+  Serial.println(percent_score);
+
+  if(score > target_score){
+    score--;
+    percent_score = (score * 100) / 10;
+    ps.push_back(percent_score);
+    newGame();
+    percent_score = 0;
+  }
+
   lcd.clear();
-  lcd.print("Score: ");
-  lcd.print(percent_score, 0);
-  lcd.print("%");
-  lcd.setCursor(0, 1);
+  lcd.print("Score ");
   lcd.print(score);
   lcd.print("/");
   lcd.print(target_score);
+  lcd.print(" ");
+  lcd.print(percent_score);
+  lcd.print("%");
+  lcd.setCursor(0, 1);
+
+  lcd.print("Game ");
+  lcd.print(ps.size());
+  lcd.print(" AVG ");
+  lcd.print(average_score, 1); 
 }
 
 void setup() {
