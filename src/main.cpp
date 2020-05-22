@@ -2,7 +2,11 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include "pitches.h"
+
 #include "secret.h"
+#include "game.h"
+
+
 #include <vector>
 #include <numeric>
 #include <ESP8266WiFi.h>
@@ -14,9 +18,9 @@ const byte tonePin =      D6; // pin 12;
 
 volatile boolean interrupt_occurred = false;
 
-volatile int score = 0;
+Game game;
+
 int target_score = 10;
-int percent_score = 0;
 float average_score = 0.0;
 
 std::vector<int> past_scores;
@@ -34,11 +38,11 @@ float calculateAverage(){
 void updateDisplay(){
   lcd.clear();
   lcd.print("Score ");
-  lcd.print(score);
+  lcd.print(game.getScore());
   lcd.print("/");
   lcd.print(target_score);
   lcd.print(" ");
-  lcd.print(percent_score);
+  lcd.print(game.getPercentScore());
   lcd.print("%");
   lcd.setCursor(0, 1);
 
@@ -51,39 +55,45 @@ void updateDisplay(){
 
 void newGame(){
   //record scores
-  past_scores.push_back(percent_score);
+  past_scores.push_back(game.getPercentScore());
   average_score = calculateAverage();
 
   //rest scores
-  percent_score = 0;
-  score = 0;
+  game.resetScore();
   updateDisplay();
 }
 
 
 void handleRoot() {
-  String message = "<h1>The Chipinator</h1>\n\n\n";
-  message += "Current Score: ";
-  message += score;
-  message += "\n\nNumber Games: ";
+  String message = "<h1>The Chipinator</h1>";
+  message += "<table border='1'><tr>";
+  message += "<td>Current Score</td>";
+  message += "<td>";
+  message += game.getPercentScore();
+  message += "</td></tr>";
+  message += "<tr><td>Number Games</td>";
+  message += "<td>";
   message += past_scores.size();
-  message += "\nAverage Score: ";
+  message += "</td></tr>";
+  message += "<tr><td>Average Score</td>";
+  message += "<td>";
   message += average_score;
-  server.send(200, "text/plain", message);
+  message += "</td></tr>";
+  message += "</tr></table>";
+  server.send(200, "text/html", message);
 }
 
 void newResetRoute(){
   
   //clear current and past scores
   past_scores.clear();
-  percent_score = 0;
+  game.resetScore();
   average_score = 0;
-  score = 0;
   updateDisplay();
 
   String message = "Reset!\n\n";
   message += "\n\nCurrent Score: ";
-  message += score;
+  message += game.getPercentScore();
   message += "\n\nNumber Games: ";
   message += past_scores.size();
   message += "\nAverage Score: ";
@@ -95,7 +105,7 @@ void newGameRoute(){
   newGame(); 
   String message = "new game started!\n\n";
   message += "\n\nCurrent Score: ";
-  message += score;
+  message += game.getPercentScore();
   message += "\n\nNumber Games: ";
   message += past_scores.size();
   message += "\nAverage Score: ";
@@ -119,14 +129,14 @@ void handleNotFound() {
 }
 
 void ICACHE_RAM_ATTR ISR(){
-  score++;
+  game.incrementScore();
   interrupt_occurred = true;   // Record that an interrupt occurred
 }
 
 void setup() {
   Serial.begin(115200);
 
-  pinMode(interruptPin, INPUT);                                //define interruptPin input pin
+  pinMode(interruptPin, INPUT);                                       //define interruptPin input pin
   attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, FALLING); //Respond to falling edges on the pin
 
   WiFi.mode(WIFI_STA);
@@ -165,7 +175,7 @@ void setup() {
 }
 
 void playSound(){
-  if (score == 50){
+  if (game.getScore() == 50){
     //mario_sound
     tone(tonePin, NOTE_E6, 125);
     delay(130);
@@ -195,7 +205,6 @@ void loop() {
 
   if (interrupt_occurred){
     interrupt_occurred = false;
-    percent_score = (score * 100) / 10;
     playSound();
     updateDisplay();
   }
