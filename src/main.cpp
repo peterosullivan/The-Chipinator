@@ -6,23 +6,19 @@
 #include "secret.h"
 #include "game.h"
 
-
 #include <vector>
 #include <numeric>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-const byte interruptPin = D4; // pin 2 =  D4 for  sensor
-const byte tonePin =      D6; // pin 12;
-
 volatile boolean interrupt_occurred = false;
+const byte interruptPin = D4; // pin 2 =  D4 for  sensor
+const byte tonePin      = D6; // pin 12;
 
 Game game;
-
 int target_score = 10;
 float average_score = 0.0;
-
 std::vector<int> past_scores;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
@@ -65,22 +61,43 @@ void newGame(){
 
 
 void handleRoot() {
-  String message = "<h1>The Chipinator</h1>";
-  message += "<table border='1'><tr>";
-  message += "<td>Current Score</td>";
-  message += "<td>";
-  message += game.getPercentScore();
-  message += "</td></tr>";
-  message += "<tr><td>Number Games</td>";
-  message += "<td>";
-  message += past_scores.size();
-  message += "</td></tr>";
-  message += "<tr><td>Average Score</td>";
-  message += "<td>";
-  message += average_score;
-  message += "</td></tr>";
-  message += "</tr></table>";
-  server.send(200, "text/html", message);
+ String htmlPage =
+    String("<!DOCTYPE HTML>") +
+    "<html lang='en'>" +
+    "<head>" +
+    "<meta charset='UTF-8'>" +
+    "<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>" +
+    "<meta http-equiv='refresh' content='10'>" +
+    "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>" +
+    "<title>The Chipinator</title>" +
+    "</head>" +
+    "<body class='text-center'>" +
+    "<div class='container'>" +
+      "<h1>The Chipinator</h1>" +
+      "<table class='table'><tr>" +
+      "<th>Current Score</th>" +
+      "<td>" +
+      String(game.getPercentScore()) + "%" +
+      "</td></tr>" +
+      "<tr><th>Number Games</th>" +
+      "<td>" +
+      String(past_scores.size()) +
+      "</td></tr>" +
+      "<tr><th>Average Score</th>" +
+      "<td>" +
+      String(average_score) +
+      "</td></tr>" +
+      "</tr></table>" +
+      "<div class='btn-group' role='group'>" +
+        "<a class='btn btn-success' role='button' href='/new'>New Game</a>" +
+        "<a class='btn btn-danger' role='button' href='/reset'>Reset</a>" +
+      "</div>" +
+    "</div>"
+    "</body></html>" +
+    "\r\n";
+
+
+  server.send(200, "text/html", htmlPage); //Send web page
 }
 
 void newResetRoute(){
