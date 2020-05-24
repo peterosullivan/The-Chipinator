@@ -5,6 +5,7 @@
 
 #include "secret.h"
 #include "game.h"
+#include "html_template.h"
 
 #include <vector>
 #include <numeric>
@@ -17,7 +18,6 @@ const byte interruptPin = D4; // pin 2 =  D4 for  sensor
 const byte tonePin      = D6; // pin 12;
 
 Game game;
-int target_score = 10;
 float average_score = 0.0;
 std::vector<int> past_scores;
 
@@ -36,7 +36,7 @@ void updateDisplay(){
   lcd.print("Score ");
   lcd.print(game.getScore());
   lcd.print("/");
-  lcd.print(target_score);
+  lcd.print(game.target_score);
   lcd.print(" ");
   lcd.print(game.getPercentScore());
   lcd.print("%");
@@ -48,7 +48,6 @@ void updateDisplay(){
   lcd.print(average_score, 1); 
 }
 
-
 void newGame(){
   //record scores
   past_scores.push_back(game.getPercentScore());
@@ -59,45 +58,26 @@ void newGame(){
   updateDisplay();
 }
 
-
 void handleRoot() {
  String htmlPage =
-    String("<!DOCTYPE HTML>") +
-    "<html lang='en'>" +
-    "<head>" +
-    "<meta charset='UTF-8'>" +
-    "<meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>" +
-    "<meta http-equiv='refresh' content='10'>" +
-    "<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>" +
-    "<title>The Chipinator</title>" +
-    "</head>" +
-    "<body class='text-center'>" +
-    "<div class='container'>" +
-      "<h1>The Chipinator</h1>" +
-      "<table class='table'><tr>" +
-      "<th>Current Score</th>" +
-      "<td>" +
-      String(game.getPercentScore()) + "%" +
-      "</td></tr>" +
-      "<tr><th>Number Games</th>" +
-      "<td>" +
-      String(past_scores.size()) +
-      "</td></tr>" +
-      "<tr><th>Average Score</th>" +
-      "<td>" +
-      String(average_score) +
-      "</td></tr>" +
-      "</tr></table>" +
-      "<div class='btn-group' role='group'>" +
-        "<a class='btn btn-success' role='button' href='/new'>New Game</a>" +
-        "<a class='btn btn-danger' role='button' href='/reset'>Reset</a>" +
-      "</div>" +
-    "</div>"
-    "</body></html>" +
-    "\r\n";
+    html_header +
+    "<table class='table'><tr>" +
+    "<th>Current Score</th>" +
+    "<td>" + String(game.getScore()) + "/" +
+    String(game.target_score) +
+    " (" + String(game.getPercentScore()) + "%)" +
+    "</td></tr>" +
+    "<tr><th>Games Played</th>" +
+    "<td>" + String(past_scores.size()) +
+    "</td></tr>" +
+    "<tr><th>Average Score</th>" +
+    "<td>" + String(average_score, 1) + "%" +
+    "&nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>" +
+    "</td></tr></table>" +
+    "<a class='btn btn-lg btn-success' role='button' href='/new'><i class='fas fa-crosshairs'></i> New Game</a>" +
+    html_footer;
 
-
-  server.send(200, "text/html", htmlPage); //Send web page
+  server.send(200, "text/html", htmlPage);
 }
 
 void newResetRoute(){
@@ -230,7 +210,7 @@ void loop() {
   Serial.print(" score: ");
   Serial.print(score);
   Serial.print(" target: ");
-  Serial.println(target_score);
+  Serial.println(game.target_score);
   */
 }
  

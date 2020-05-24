@@ -5,6 +5,7 @@ class Game{
     private:
       volatile int score;
     public:
+      int target_score = 10;
       int getScore(void);
       void resetScore(void);
       void incrementScore(void);
@@ -21,7 +22,7 @@ void Game::resetScore(void){
 }
 
 int Game::getPercentScore(void){
-  return (int)(score * 100) / 10;
+  return (int)(score * 100) / target_score;
 }
 
 int Game::getScore(void){
