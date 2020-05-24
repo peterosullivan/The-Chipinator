@@ -68,13 +68,13 @@ void handleRoot() {
     " (" + String(game.getPercentScore()) + "%)" +
     "</td></tr>" +
     "<tr><th>Games Played</th>" +
-    "<td>" + String(past_scores.size()) +
+    "<td class='games_played'>" + String(past_scores.size()) +
     "</td></tr>" +
     "<tr><th>Average Score</th>" +
-    "<td>" + String(average_score, 1) + "%" +
+    "<td><span class='average_score'>" + String(average_score, 1) + "</span>%" +
     "&nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>" +
     "</td></tr></table>" +
-    "<a class='btn btn-lg btn-success' role='button' href='/new'><i class='fas fa-crosshairs'></i> New Game</a>" +
+    "<button type='button' class='btn btn-lg btn-success' onclick='newGame()'><i class='fas fa-crosshairs'></i> New Game</button>" +
     html_footer;
 
   server.send(200, "text/html", htmlPage);
@@ -100,14 +100,13 @@ void newResetRoute(){
 
 void newGameRoute(){
   newGame(); 
-  String message = "new game started!\n\n";
-  message += "\n\nCurrent Score: ";
-  message += game.getPercentScore();
-  message += "\n\nNumber Games: ";
-  message += past_scores.size();
-  message += "\nAverage Score: ";
+
+  String message = "\"average_score\": ";
   message += average_score;
-  server.send(200, "text/plain", message);
+  message += ", \"games_played\": ";
+  message += past_scores.size();
+
+  server.send(200, "text/json", "{" + message + "}");
 }
 
 void handleNotFound() {
