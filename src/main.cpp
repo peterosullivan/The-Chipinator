@@ -80,7 +80,7 @@ void handleRoot() {
   server.send(200, "text/html", htmlPage);
 }
 
-void newResetRoute(){
+void resetRoute(){
   
   //clear current and past scores
   past_scores.clear();
@@ -88,14 +88,8 @@ void newResetRoute(){
   average_score = 0;
   updateDisplay();
 
-  String message = "Reset!\n\n";
-  message += "\n\nCurrent Score: ";
-  message += game.getPercentScore();
-  message += "\n\nNumber Games: ";
-  message += past_scores.size();
-  message += "\nAverage Score: ";
-  message += average_score;
-  server.send(200, "text/plain", message);
+  String html = "<!DOCTYPE HTML><html lang='en'><head><meta http-equiv='refresh' content='2;url=/' /></head><body><h1>Reset!</h1></body></html>";
+  server.send(200, "text/html", html);
 }
 
 void newGameRoute(){
@@ -160,7 +154,7 @@ void setup() {
 
   server.on("/", handleRoot);
   server.on("/new", newGameRoute);
-  server.on("/reset", newResetRoute);
+  server.on("/reset", resetRoute);
   server.onNotFound(handleNotFound);
 
   if (MDNS.begin("chip")) {
@@ -197,7 +191,7 @@ void playSound(){
 
 void loop() {
   server.handleClient();
-  MDNS.update();
+  //MDNS.update();
 
   if (interrupt_occurred){
     interrupt_occurred = false;
@@ -207,7 +201,7 @@ void loop() {
  
   /*
   Serial.print(" score: ");
-  Serial.print(score);
+  Serial.print(game.score);
   Serial.print(" target: ");
   Serial.println(game.target_score);
   */
