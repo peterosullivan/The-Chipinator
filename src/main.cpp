@@ -61,11 +61,19 @@ void newGame(){
 void handleRoot() {
  String htmlPage =
     html_header +
+    "<div class='card mb-4 shadow-sm'>" +
+      "<div class='card-body'>" +
+        "<h1 class='card-title'>" +
+         "<span class='score'>" + String(game.getScore()) + "</span>"
+        "<small class='text-muted'> / " + String(game.target_score) + "</small>" +
+        "</h1>" +
+        "<button type='button' id='new_game' class='btn btn-block btn-lg btn-success' onclick='newGame()'><i class='fas fa-crosshairs'></i> New Game</button>" +
+      "</div>" +
+    "</div>" +
+
     "<table class='table'><tr>" +
     "<th>Current Score</th>" +
-    "<td><span class='score'>" + String(game.getScore()) + "</span>/" +
-    String(game.target_score) +
-    " (<span class='score_percent'>" + String(game.getPercentScore()) + "</span>%)" +
+    "<td><span class='score_percent'>" + String(game.getPercentScore()) + "</span>%" +
     "</td></tr>" +
     "<tr><th>Games Played</th>" +
     "<td class='games_played'>" + String(past_scores.size()) +
@@ -74,7 +82,6 @@ void handleRoot() {
     "<td><span class='average_score'>" + String(average_score, 1) + "</span>%" +
     "&nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>" +
     "</td></tr></table>" +
-    "<button type='button' class='btn btn-lg btn-success' onclick='newGame()'><i class='fas fa-crosshairs'></i> New Game</button>" +
     html_footer;
 
   server.send(200, "text/html", htmlPage);

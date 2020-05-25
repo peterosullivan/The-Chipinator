@@ -12,11 +12,35 @@ String html_header = R"=====(
               height: 100%; background-color: #333; color: #fff; text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
           }
           .cover-container{
-              max-width: 42em; margin: auto;
+              max-width: 25em; margin: auto;
+          }
+          .card {
+            position: relative;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-direction: column;
+            flex-direction: column;
+            min-width: 0;
+            word-wrap: break-word;
+            background-color: #3c3c3c;
+            background-clip: border-box;
+            border: 1px solid rgba(0,0,0,.125);
+            border-radius: .25rem;
+            margin: 1.5rem 0 !important;
+          }
+          .shadow-sm {
+            box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+          }
+          .card-body{
+            padding: 1.25rem;
+          }
+          .card-title{
+            font-size: 90px;
           }
         </style>
         <script>
           function newGame() {
+           document.getElementById('new_game').disabled = true;
             var xhttp = new XMLHttpRequest();
             xhttp.responseType = 'json';
             xhttp.onreadystatechange = function() {
@@ -26,6 +50,7 @@ String html_header = R"=====(
                 document.getElementsByClassName('games_played')[0].innerHTML = json.games_played
                 document.getElementsByClassName('score_percent')[0].innerHTML = 0
                 document.getElementsByClassName('score')[0].innerHTML = 0
+                document.getElementById('new_game').disabled = false;
               }
             };
             xhttp.open("GET", '/new', true);
