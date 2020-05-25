@@ -24,6 +24,8 @@ String html_header = R"=====(
                 var json = this.response;
                 document.getElementsByClassName('average_score')[0].innerHTML = json.average_score
                 document.getElementsByClassName('games_played')[0].innerHTML = json.games_played
+                document.getElementsByClassName('score_percent')[0].innerHTML = 0
+                document.getElementsByClassName('score')[0].innerHTML = 0
               }
             };
             xhttp.open("GET", '/new', true);

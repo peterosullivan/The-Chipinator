@@ -63,9 +63,9 @@ void handleRoot() {
     html_header +
     "<table class='table'><tr>" +
     "<th>Current Score</th>" +
-    "<td>" + String(game.getScore()) + "/" +
+    "<td><span class='score'>" + String(game.getScore()) + "</span>/" +
     String(game.target_score) +
-    " (" + String(game.getPercentScore()) + "%)" +
+    " (<span class='score_percent'>" + String(game.getPercentScore()) + "</span>%)" +
     "</td></tr>" +
     "<tr><th>Games Played</th>" +
     "<td class='games_played'>" + String(past_scores.size()) +
@@ -106,7 +106,7 @@ void newGameRoute(){
   message += ", \"games_played\": ";
   message += past_scores.size();
 
-  server.send(200, "text/json", "{" + message + "}");
+  server.send(200, "application/json", "{" + message + "}");
 }
 
 void handleNotFound() {
