@@ -39,23 +39,41 @@ String html_header = R"=====(
           }
         </style>
         <script>
+
+          var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+          connection.onopen = function () {
+            connection.send('Connect ' + new Date());
+          };
+          connection.onerror = function (error) {
+            console.log('WebSocket Error ', error);
+          };
+          connection.onmessage = function (e) {
+            console.log('Server: ', e.data);
+            document.getElementsByClassName('score')[0].innerHTML = e.data;
+          };
+          connection.onclose = function () {
+            console.log('WebSocket connection closed');
+          };
+
           function newGame() {
-           document.getElementById('new_game').disabled = true;
-            var xhttp = new XMLHttpRequest();
-            xhttp.responseType = 'json';
-            xhttp.onreadystatechange = function() {
-              if (this.readyState == 4 && this.status == 200) {
-                var json = this.response;
-                document.getElementsByClassName('average_score')[0].innerHTML = json.average_score
-                document.getElementsByClassName('games_played')[0].innerHTML = json.games_played
-                document.getElementsByClassName('score_percent')[0].innerHTML = 0
-                document.getElementsByClassName('score')[0].innerHTML = 0
-                document.getElementById('new_game').disabled = false;
-              }
-            };
-            xhttp.open("GET", '/new', true);
-            xhttp.send();
+            //connection.send("n");
+            document.getElementById('new_game').disabled = true;
+              var xhttp = new XMLHttpRequest();
+              xhttp.responseType = 'json';
+              xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                  var json = this.response;
+                  document.getElementsByClassName('average_score')[0].innerHTML = json.average_score
+                  document.getElementsByClassName('games_played')[0].innerHTML = json.games_played
+                  document.getElementsByClassName('score_percent')[0].innerHTML = 0
+                  document.getElementsByClassName('score')[0].innerHTML = 0
+                  document.getElementById('new_game').disabled = false;
+                }
+              };
+              xhttp.open("GET", '/new', true);
+              xhttp.send();
           }
+
         </script>
       </head>
       <body class='text-center'>

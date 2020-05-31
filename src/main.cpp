@@ -1,21 +1,40 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include "pitches.h"
+#include <vector>
+#include <numeric>
 
+#include "pitches.h"
 #include "secret.h"
 #include "game.h"
 #include "html_template.h"
 
-#include <vector>
-#include <numeric>
+#include <ArduinoOTA.h>
+
 #include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+#include <WebSocketsServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
+#include <FS.h>
+
+
+ESP8266WiFiMulti WiFiMulti;
+ESP8266WebServer server(80);
+WebSocketsServer webSocket = WebSocketsServer(81);
+
+const char *OTAName = "ESP8266";           // A name and a password for the OTA service
+const char *OTAPassword = "esp8266";
+const char* mdnsName = "chip"; //http://chip.local
+
+
+File fsUploadFile;     // a File variable to temporarily store the received file
 volatile boolean interrupt_occurred = false;
 const byte interruptPin = D4; // pin 2 =  D4 for  sensor
 const byte tonePin      = D6; // pin 12;
+
+
 
 Game game;
 float average_score = 0.0;
@@ -23,8 +42,6 @@ std::vector<int> past_scores;
 
 LiquidCrystal_I2C lcd(0x3F, 16, 2);
 //LiquidCrystal_I2C lcd(0x27,20,4);
-
-ESP8266WebServer server(80);
 
 float calculateAverage(){
   float average = accumulate( past_scores.begin(), past_scores.end(), 0.0)/past_scores.size(); 
@@ -130,8 +147,65 @@ void ICACHE_RAM_ATTR ISR(){
   interrupt_occurred = true;   // Record that an interrupt occurred
 }
 
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) { // When a WebSocket message is received
+  switch (type) {
+    case WStype_DISCONNECTED:             // if the websocket is disconnected
+      Serial.printf("[%u] Disconnected!\n", num);
+      break;
+    case WStype_CONNECTED: {              // if a new websocket connection is established
+        IPAddress ip = webSocket.remoteIP(num);
+        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        //rainbow = false;                  // Turn rainbow off when a new connection is established
+      }
+      break;
+    case WStype_TEXT:                     // if new text data is received
+      Serial.printf("[%u] get Text: %s\n", num, payload);
+      if (payload[0] == '#') {            // we get RGB data
+        //uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
+        //int r = ((rgb >> 20) & 0x3FF);                     // 10 bits per color, so R: bits 20-29
+        //int g = ((rgb >> 10) & 0x3FF);                     // G: bits 10-19
+        //int b =          rgb & 0x3FF;                      // B: bits  0-9
+
+        //analogWrite(LED_RED,   r);                         // write it to the LED output pins
+        //analogWrite(LED_GREEN, g);
+        //analogWrite(LED_BLUE,  b);
+      } else if (payload[0] == 'R') {                      // the browser sends an R when the rainbow effect is enabled
+        Serial.printf("R Socket button!!!");
+      } else if (payload[0] == 'n') {                      // the browser sends an N when the rainbow effect is disabled
+       Serial.printf("New Game Socket button!!!");
+       newGame();
+      }
+      break;
+    case WStype_ERROR:
+      Serial.printf("Error");
+      break;
+    // For everything else: do nothing
+    case WStype_BIN:
+    case WStype_FRAGMENT_TEXT_START:
+    case WStype_FRAGMENT_BIN_START:
+    case WStype_FRAGMENT:
+    case WStype_FRAGMENT_FIN:
+    default:
+      break;
+  }
+}
+
+void startWebSocket() { // Start a WebSocket server
+  webSocket.begin();                          // start the websocket server
+  webSocket.onEvent(webSocketEvent);          // if there's an incomming websocket message, go to function 'webSocketEvent'
+  Serial.println("WebSocket server started.");
+}
+
+void startMDNS() { // Start the mDNS responder
+  MDNS.begin(mdnsName);                        // start the multicast domain name server
+  Serial.print("mDNS responder started: http://");
+  Serial.print(mdnsName);
+  Serial.println(".local");
+}
+
 void setup() {
   Serial.begin(115200);
+  delay(10);
 
   pinMode(interruptPin, INPUT);                                       //define interruptPin input pin
   attachInterrupt(digitalPinToInterrupt(interruptPin), ISR, FALLING); //Respond to falling edges on the pin
@@ -164,7 +238,10 @@ void setup() {
   server.on("/reset", resetRoute);
   server.onNotFound(handleNotFound);
 
-  if (MDNS.begin("chip")) {
+  startWebSocket();
+  startMDNS();
+
+  if (MDNS.begin(mdnsName)) {
     Serial.println("MDNS responder started");
   }
   server.begin();
@@ -197,13 +274,15 @@ void playSound(){
 }
 
 void loop() {
+  webSocket.loop();                           // constantly check for websocket events
   server.handleClient();
-  //MDNS.update();
 
   if (interrupt_occurred){
     interrupt_occurred = false;
     playSound();
     updateDisplay();
+    String msg = String(game.getScore());
+    webSocket.broadcastTXT(msg);
   }
  
   /*
