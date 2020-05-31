@@ -9,18 +9,12 @@
 #include "game.h"
 #include "html_template.h"
 
-#include <ArduinoOTA.h>
-
+//https://tttapa.github.io/ESP8266/Chap14%20-%20WebSocket.html
 #include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
 #include <WebSocketsServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-#include <FS.h>
-
-
-ESP8266WiFiMulti WiFiMulti;
 ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
@@ -28,12 +22,9 @@ const char *OTAName = "ESP8266";           // A name and a password for the OTA 
 const char *OTAPassword = "esp8266";
 const char* mdnsName = "chip"; //http://chip.local
 
-
-File fsUploadFile;     // a File variable to temporarily store the received file
 volatile boolean interrupt_occurred = false;
 const byte interruptPin = D4; // pin 2 =  D4 for  sensor
 const byte tonePin      = D6; // pin 12;
-
 
 
 Game game;
@@ -155,23 +146,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        //rainbow = false;                  // Turn rainbow off when a new connection is established
       }
       break;
     case WStype_TEXT:                     // if new text data is received
       Serial.printf("[%u] get Text: %s\n", num, payload);
-      if (payload[0] == '#') {            // we get RGB data
-        //uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
-        //int r = ((rgb >> 20) & 0x3FF);                     // 10 bits per color, so R: bits 20-29
-        //int g = ((rgb >> 10) & 0x3FF);                     // G: bits 10-19
-        //int b =          rgb & 0x3FF;                      // B: bits  0-9
-
-        //analogWrite(LED_RED,   r);                         // write it to the LED output pins
-        //analogWrite(LED_GREEN, g);
-        //analogWrite(LED_BLUE,  b);
-      } else if (payload[0] == 'R') {                      // the browser sends an R when the rainbow effect is enabled
-        Serial.printf("R Socket button!!!");
-      } else if (payload[0] == 'n') {                      // the browser sends an N when the rainbow effect is disabled
+      if (payload[0] == 'n') {                      // the browser sends an n then new game
        Serial.printf("New Game Socket button!!!");
        newGame();
       }
@@ -190,17 +169,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
   }
 }
 
-void startWebSocket() { // Start a WebSocket server
-  webSocket.begin();                          // start the websocket server
-  webSocket.onEvent(webSocketEvent);          // if there's an incomming websocket message, go to function 'webSocketEvent'
-  Serial.println("WebSocket server started.");
+void startWebSocket() { 
+  webSocket.begin();                          
+  webSocket.onEvent(webSocketEvent);    // if there's an incomming websocket message, go to function 'webSocketEvent'
+  Serial.println("WebSocket server started");
 }
 
 void startMDNS() { // Start the mDNS responder
-  MDNS.begin(mdnsName);                        // start the multicast domain name server
-  Serial.print("mDNS responder started: http://");
-  Serial.print(mdnsName);
-  Serial.println(".local");
+   if (MDNS.begin(mdnsName)) {
+    Serial.print("mDNS responder started: http://");
+    Serial.print(mdnsName);
+    Serial.println(".local");
+  }
 }
 
 void setup() {
@@ -228,7 +208,7 @@ void setup() {
 
   lcd.clear();
   lcd.print(WiFi.localIP());
-  delay(2000);
+  delay(1000);
   lcd.clear();
 
   updateDisplay();
@@ -241,9 +221,6 @@ void setup() {
   startWebSocket();
   startMDNS();
 
-  if (MDNS.begin(mdnsName)) {
-    Serial.println("MDNS responder started");
-  }
   server.begin();
   Serial.println("HTTP server started");
 }

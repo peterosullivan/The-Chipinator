@@ -40,7 +40,8 @@ String html_header = R"=====(
         </style>
         <script>
 
-          var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+          var connection = new WebSocket('ws://' + location.hostname + ':81/');
+
           connection.onopen = function () {
             connection.send('Connect ' + new Date());
           };
