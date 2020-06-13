@@ -3,6 +3,8 @@ String html_header = R"=====(
     <html lang='en'>
       <head>
         <meta charset='UTF-8'>
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
         <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
         <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>
         <script src="https://kit.fontawesome.com/5c486d6045.js" crossorigin="anonymous"></script>
