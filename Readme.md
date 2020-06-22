@@ -14,4 +14,7 @@ Upload a files `curl -F "file=@$PWD/index.html.gz" 192.168.0.250/upload`
 
 One liner `gzip -c index.html > index.html.gz && curl -F "file=@$PWD/index.html.gz" 192.168.0.250/upload`
 
-Delete a file `SPIFFS.remove("/index.html");`
+TODO; 
+  Add SSL - https://stackoverflow.com/questions/42766670/arduino-library-for-esp8266-wificlientsecure-which-ssl-certificates-are-need, https://nofurtherquestions.wordpress.com/2016/03/14/making-an-esp8266-web-accessible/
+
+  Add delete a file route - `SPIFFS.remove("/index.html");`
