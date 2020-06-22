@@ -3,11 +3,13 @@
 #include <LiquidCrystal_I2C.h>
 #include <vector>
 #include <numeric>
+#include <FS.h>
+#include <ArduinoJson.h>
 
 #include "pitches.h"
 #include "secret.h"
 #include "game.h"
-#include "html_template.h"
+#include "helper.h"
 
 //https://tttapa.github.io/ESP8266/Chap14%20-%20WebSocket.html
 #include <ESP8266WiFi.h>
@@ -17,6 +19,12 @@
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
+
+// hold uploaded file
+File fsUploadFile;
+String getContentType(String filename); // convert the file extension to the MIME type
+bool handleFileRead(String path);       // send the right file to the client (if it exists)
+
 
 const char *OTAName = "ESP8266";           // A name and a password for the OTA service
 const char *OTAPassword = "esp8266";
@@ -66,33 +74,77 @@ void newGame(){
   updateDisplay();
 }
 
+bool handleFileRead(String path){  // send the right file to the client (if it exists)
+  Serial.println("handleFileRead: " + path);
+  if(path.endsWith("/")) path += "index.html";           // If a folder is requested, send the index file
+  String contentType = getContentType(path);             // Get the MIME type
+  String pathWithGz = path + ".gz";
+  if(SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)){  // If the file exists, either as a compressed archive, or normal
+    if(SPIFFS.exists(pathWithGz))                          // If there's a compressed version available
+      path += ".gz";                                         // Use the compressed version
+    File file = SPIFFS.open(path, "r");                    // Open the file
+    server.streamFile(file, contentType);    // Send it to the client
+    file.close();                                          // Close the file again
+    Serial.println(String("\tSent file: ") + path);
+    return true;
+  }
+  Serial.println(String("\tFile Not Found: ") + path);
+  return false;                                          // If the file doesn't exist, return false
+}
+
+void handleFileUpload(){ // upload a new file to the SPIFFS
+  HTTPUpload& upload = server.upload();
+  String path;
+  if(upload.status == UPLOAD_FILE_START){
+    path = upload.filename;
+    if(!path.startsWith("/")) path = "/"+path;
+    if(!path.endsWith(".gz")) {                          // The file server always prefers a compressed version of a file 
+      String pathWithGz = path+".gz";                    // So if an uploaded file is not compressed, the existing compressed
+      if(SPIFFS.exists(pathWithGz))                      // version of that file must be deleted (if it exists)
+         SPIFFS.remove(pathWithGz);
+    }
+    Serial.print("handleFileUpload Name: "); Serial.println(path);
+    fsUploadFile = SPIFFS.open(path, "w");            // Open the file for writing in SPIFFS (create if it doesn't exist)
+    path = String();
+  } else if(upload.status == UPLOAD_FILE_WRITE){
+    if(fsUploadFile)
+      fsUploadFile.write(upload.buf, upload.currentSize); // Write the received bytes to the file
+  } else if(upload.status == UPLOAD_FILE_END){
+    if(fsUploadFile) {                                    // If the file was successfully created
+      fsUploadFile.close();                               // Close the file again
+      Serial.print("handleFileUpload Size: "); Serial.println(upload.totalSize);
+      server.sendHeader("Location","/success.html");      // Redirect the client to the success page
+      server.send(303);
+    } else {
+      server.send(500, "text/plain", "500: couldn't create file");
+    }
+  }
+}
+
+void handleFileList()
+{
+  String path = "/";
+  // Assuming there are no subdirectories
+  Dir dir = SPIFFS.openDir(path);
+  String output;
+  Serial.println("Start list");
+  while(dir.next())
+  {
+    File entry = dir.openFile("r");
+    size_t fileSize = dir.fileSize();
+    Serial.printf("\tFS File: %s, size: %s\r\n", entry.name(), formatBytes(fileSize).c_str());
+    output += String(entry.name()).substring(1) + " - " + formatBytes(fileSize).c_str() + "<br/>"; 
+    entry.close();
+  }
+  server.send(200, "text/html", output);
+}
+
+
 void handleRoot() {
- String htmlPage =
-    html_header +
-    "<div class='card mb-4 shadow-sm'>" +
-      "<div class='card-body'>" +
-        "<h1 class='card-title'>" +
-         "<span class='score'>" + String(game.getScore()) + "</span>"
-        "<small class='text-muted'> / " + String(game.target_score) + "</small>" +
-        "</h1>" +
-        "<button type='button' id='new_game' class='btn btn-block btn-lg btn-success' onclick='newGame()'><i class='fas fa-crosshairs'></i> New Game</button>" +
-      "</div>" +
-    "</div>" +
-
-    "<table class='table'><tr>" +
-    "<th>Current Score</th>" +
-    "<td><span class='score_percent'>" + String(game.getPercentScore()) + "</span>%" +
-    "</td></tr>" +
-    "<tr><th>Games Played</th>" +
-    "<td class='games_played'>" + String(past_scores.size()) +
-    "</td></tr>" +
-    "<tr><th>Average Score</th>" +
-    "<td><span class='average_score'>" + String(average_score, 1) + "</span>%" +
-    "&nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>" +
-    "</td></tr></table>" +
-    html_footer;
-
-  server.send(200, "text/html", htmlPage);
+  Serial.print("handleRoot method");
+  File file = SPIFFS.open("/index.html.gz","r");
+  server.streamFile(file, "text/html");
+  file.close();
 }
 
 void resetRoute(){
@@ -118,21 +170,6 @@ void newGameRoute(){
   server.send(200, "application/json", "{" + message + "}");
 }
 
-void handleNotFound() {
-  String message = "File Not Found\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
-  message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i = 0; i < server.args(); i++) {
-    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
-  }
-  server.send(404, "text/plain", message);
-}
-
 void ICACHE_RAM_ATTR ISR(){
   game.incrementScore();
   interrupt_occurred = true;   // Record that an interrupt occurred
@@ -145,6 +182,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       break;
     case WStype_CONNECTED: {              // if a new websocket connection is established
         IPAddress ip = webSocket.remoteIP(num);
+        webSocket.broadcastTXT( game.toJson() );
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
       }
       break;
@@ -185,6 +223,8 @@ void startMDNS() { // Start the mDNS responder
 
 void setup() {
   Serial.begin(115200);
+  SPIFFS.begin();
+  //SPIFFS.remove("/index.html"); //TODO: create file delete route
   delay(10);
 
   pinMode(interruptPin, INPUT);                                       //define interruptPin input pin
@@ -213,10 +253,17 @@ void setup() {
 
   updateDisplay();
 
-  server.on("/", handleRoot);
   server.on("/new", newGameRoute);
   server.on("/reset", resetRoute);
-  server.onNotFound(handleNotFound);
+  server.on("/list", HTTP_GET, handleFileList);
+  server.on("/upload", HTTP_POST, [](){
+    server.send(200, "text/plain", "{\"success\":1}");
+  }, handleFileUpload);
+
+  server.onNotFound([]() {                              // If the client requests any URI
+    if (!handleFileRead(server.uri()))                  // send it if it exists
+      server.send(404, "text/plain", "404: Not Found"); // otherwise, respond with a 404 (Not Found) error
+  });
 
   startWebSocket();
   startMDNS();
@@ -258,8 +305,7 @@ void loop() {
     interrupt_occurred = false;
     playSound();
     updateDisplay();
-    String msg = String(game.getScore());
-    webSocket.broadcastTXT(msg);
+    webSocket.broadcastTXT(game.toJson());
   }
  
   /*

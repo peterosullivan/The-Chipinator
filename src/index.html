@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+  <html lang='en'>
+    <head>
+      <meta charset='UTF-8'>
+      <title>The Chipinator</title>
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
+      
+      <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+      <link rel="apple-touch-icon" type="image/x-icon" href="icon.png" />
+      
+      <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+      <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css'>
+      <script src="https://kit.fontawesome.com/5c486d6045.js" crossorigin="anonymous"></script>
+      
+
+      <style>
+        html, body{
+            height: 100%; background-color: #333; color: #fff; text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
+        }
+        .cover-container{
+            max-width: 25em; margin: auto;
+        }
+        .card {
+          position: relative;
+          display: -ms-flexbox;
+          display: flex;
+          -ms-flex-direction: column;
+          flex-direction: column;
+          min-width: 0;
+          word-wrap: break-word;
+          background-color: #3c3c3c;
+          background-clip: border-box;
+          border: 1px solid rgba(0,0,0,.125);
+          border-radius: .25rem;
+          margin: 1.5rem 0 !important;
+        }
+        .shadow-sm {
+          box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+        }
+        .card-body{
+          padding: 1.25rem;
+        }
+        .card-title{
+          font-size: 90px;
+        }
+      </style>
+      
+      <script>
+
+        window.connection = new WebSocket('ws://' + location.hostname + ':81/');
+
+        //document.addEventListener("DOMContentLoaded", function() {
+        //  console.log("Connect to server get vars...")
+        //});
+
+        connection.onopen = function () {
+          console.log("Connenting open!!")
+          connection.send('Connect ' + new Date());
+        };
+
+        connection.onerror = function (error) {
+          console.log('WebSocket Error ', error);
+        };
+
+        connection.onmessage = function (e) {
+          console.log(e)
+          var json_msg = JSON.parse(e.data);
+
+          document.getElementsByClassName('average_score')[0].innerHTML = 0
+          document.getElementsByClassName('games_played')[0].innerHTML = 0
+          document.getElementsByClassName('percent_score')[0].innerHTML = json_msg["percent_score"];
+          document.getElementsByClassName('score')[0].innerHTML = json_msg["score"];
+          document.getElementsByClassName('target_score')[0].innerHTML = json_msg["target_score"];
+        };
+        
+        connection.onclose = function () {
+          console.log('WebSocket connection closed');
+        };
+
+        function newGame() {
+          //connection.send("n");
+          document.getElementById('new_game').disabled = true;
+            var xhttp = new XMLHttpRequest();
+            xhttp.responseType = 'json';
+            xhttp.onreadystatechange = function() {
+              if (this.readyState == 4 && this.status == 200) {
+                var json = this.response;
+                document.getElementsByClassName('average_score')[0].innerHTML = json.average_score
+                document.getElementsByClassName('games_played')[0].innerHTML = json.games_played
+                document.getElementsByClassName('percent_score')[0].innerHTML = 0
+                document.getElementsByClassName('score')[0].innerHTML = 0
+                document.getElementById('new_game').disabled = false;
+              }
+            };
+            xhttp.open("GET", '/new', true);
+            xhttp.send();
+        }
+
+      </script>
+    </head>
+    <body class='text-center'>
+      <div class='cover-container d-flex w-100 h-100 p-3 mx-auto flex-column'>
+        <h1>The Chipinator</h1>
+
+        <div class='card mb-4 shadow-sm'>
+          <div class='card-body'>
+            <h1 class='card-title'>
+              <span class='score'> String(game.getScore()) </span>
+              <small class='text-muted'> 
+                / <span class='target_score'>String(game.target_score)</span> 
+              </small>
+            </h1>
+            <button type='button' id='new_game' class='btn btn-block btn-lg btn-success' onclick='newGame()'>
+              <i class='fas fa-crosshairs'></i> New Game
+            </button>
+          </div>
+        </div>
+        
+        <table class='table'>
+          <tr>
+            <th>Current Score</th>
+            <td>
+              <span class='percent_score'> String(game.getPercentScore()) </span>%
+            </td>
+          </tr>
+          <tr>
+            <th>Games Played</th>
+            <td class='games_played'> 
+              String(past_scores.size())
+            </td>
+          </tr>
+          <tr>
+            <th>Average Score</th>
+            <td>
+              <span class='average_score'> String(average_score, 1) </span>%
+              &nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>
+            </td>
+          </tr>
+        </table>
+
+      </div>
+  </body>
+</html>
