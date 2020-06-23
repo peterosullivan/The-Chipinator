@@ -1,0 +1,29 @@
+html, body{
+    height: 100%; background-color: #333; color: #fff; text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
+}
+.cover-container{
+    max-width: 25em; margin: auto;
+}
+.card {
+  position: relative;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  min-width: 0;
+  word-wrap: break-word;
+  background-color: #3c3c3c;
+  background-clip: border-box;
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: .25rem;
+  margin: 1.5rem 0 !important;
+}
+.shadow-sm {
+  box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+}
+.card-body{
+  padding: 1.25rem;
+}
+.card-title{
+  font-size: 90px;
+}
