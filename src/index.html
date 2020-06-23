@@ -30,7 +30,7 @@
 
       <script src="/app.js"></script>
       <link rel='stylesheet' href='/app.css'>
-      
+
     </head>
     <body class='text-center'>
       <div class='cover-container d-flex w-100 h-100 p-3 mx-auto flex-column'>
@@ -39,9 +39,9 @@
         <div class='card mb-4 shadow-sm'>
           <div class='card-body'>
             <h1 class='card-title'>
-              <span class='score'> String(game.getScore()) </span>
+              <span class='score'></span>
               <small class='text-muted'> 
-                / <span class='target_score'>String(game.target_score)</span> 
+                / <span class='target_score'></span> 
               </small>
             </h1>
             <button type='button' id='new_game' class='btn btn-block btn-lg btn-success' onclick='newGame()'>
@@ -54,19 +54,17 @@
           <tr>
             <th>Current Score</th>
             <td>
-              <span class='percent_score'> String(game.getPercentScore()) </span>%
+              <span class='percent_score'></span>%
             </td>
           </tr>
           <tr>
             <th>Games Played</th>
-            <td class='games_played'> 
-              String(past_scores.size())
-            </td>
+            <td class='games_played'></td>
           </tr>
           <tr>
             <th>Average Score</th>
             <td>
-              <span class='average_score'> String(average_score, 1) </span>%
+              <span class='average_score'></span>%
               &nbsp;<a href='/reset'><i class='fas fa-minus-circle text-danger'></i></a>
             </td>
           </tr>
