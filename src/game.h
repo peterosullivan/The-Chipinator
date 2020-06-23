@@ -21,7 +21,7 @@ Game::Game(void){
 
 char* Game::toJson(void){
   DynamicJsonDocument doc(1024);
-  char json_string[256];
+  char json_string[512];
 
   doc["target_score"] = target_score;
   doc["score"] = score;
